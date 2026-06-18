@@ -1,6 +1,6 @@
 import time
 from hashlib import sha256
-
+from multiprocessing import Pool, cpu_count
 
 PASSWORDS_TO_BRUTE_FORCE = [
     "b4061a4bcfe1a2cbf78286f3fab2fb578266d1bd16c414c650c5ac04dfc696e1",
@@ -16,12 +16,45 @@ PASSWORDS_TO_BRUTE_FORCE = [
 ]
 
 
-def sha256_hash_str(to_hash: str) -> str:
-    return sha256(to_hash.encode("utf-8")).hexdigest()
+def check_range(args) -> dict:
+    start, end = args
+    targets = set(PASSWORDS_TO_BRUTE_FORCE)
+    local_results = {}
+
+    for i in range(start, end):
+        pwd = f"{i:08}"
+        current_hash = sha256(pwd.encode("utf-8")).hexdigest()
+
+        if current_hash in targets:
+            local_results[current_hash] = pwd
+            print(f"Found: {pwd} -> {current_hash}")
+
+    return local_results
 
 
 def brute_force_password() -> None:
-    pass
+    num_processes = cpu_count()
+    total_combinations = 100_000_000
+    step = total_combinations // num_processes
+
+    tasks = []
+    for i in range(num_processes):
+        start = i * step
+        end = total_combinations if i == num_processes - 1 else start + step
+        tasks.append((start, end))
+
+    print(f"Starting brute-force using {num_processes} CPU cores...")
+
+    with Pool(processes=num_processes) as pool:
+        results = pool.map(check_range, tasks)
+
+    final_results = {}
+    for local_dict in results:
+        final_results.update(local_dict)
+
+    print("\nBrute-force results:")
+    for h, p in final_results.items():
+        print(f"Password: {p} | Hash: {h}")
 
 
 if __name__ == "__main__":
