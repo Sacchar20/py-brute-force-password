@@ -16,6 +16,10 @@ PASSWORDS_TO_BRUTE_FORCE = [
 ]
 
 
+def sha256_hash_str(to_hash: str) -> str:
+    return sha256(to_hash.encode("utf-8")).hexdigest()
+
+
 def check_range(args) -> dict:
     start, end = args
     targets = set(PASSWORDS_TO_BRUTE_FORCE)
@@ -23,7 +27,7 @@ def check_range(args) -> dict:
 
     for i in range(start, end):
         pwd = f"{i:08}"
-        current_hash = sha256(pwd.encode("utf-8")).hexdigest()
+        current_hash = sha256_hash_str(pwd)
 
         if current_hash in targets:
             local_results[current_hash] = pwd
@@ -52,9 +56,13 @@ def brute_force_password() -> None:
     for local_dict in results:
         final_results.update(local_dict)
 
+    if len(final_results) != 10:
+        raise ValueError(f"Expected 10 passwords, but found {len(final_results)}")
+
     print("\nBrute-force results:")
-    for h, p in final_results.items():
-        print(f"Password: {p} | Hash: {h}")
+    for target_hash in PASSWORDS_TO_BRUTE_FORCE:
+        pwd = final_results[target_hash]
+        print(f"Password: {pwd} | Hash: {target_hash}")
 
 
 if __name__ == "__main__":
